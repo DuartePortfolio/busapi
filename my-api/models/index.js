@@ -28,7 +28,7 @@ db.AlternativeTrajectory = require('./AlternativeTrajectory')(sequelize, Sequeli
 db.Trip = require('./Trip')(sequelize, Sequelize);
 db.TripAlternativeTrajectory = require('./TripAlternativeTrajectory')(sequelize, Sequelize);
 
-// Connect tables that have associations ()
+// Connect tables that have associations
 Object.values(db).forEach(model => {
   if (model.associate) model.associate(db);
 });

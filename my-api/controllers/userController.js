@@ -36,6 +36,9 @@ exports.createUser = async (req, res) => {
     if (!['driver', 'operator'].includes(role)) {
       return res.status(400).json({ error: 'Role must be driver or operator.' })
     }
+    //if (!contact || typeof contact !== 'integer') {
+      //return res.status(400).json({ error: 'Contact must be a number.' })
+    //}
 
     const existingUser = await User.findOne({ where: { email}})
     if (existingUser) {

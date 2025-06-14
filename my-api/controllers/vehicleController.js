@@ -102,7 +102,7 @@ exports.updateVehicle = async (req, res) => {
       return res.status(400).json({ error: 'capacity must be a positive number.' })
     }
 
-    // Verifies se plate_number exists on another vehicle
+    // Verifies if plate_number exists on another vehicle
     if (plate_number) {
       const existingVehicle = await Vehicle.findOne({ where: { plate_number } })
       if (existingVehicle && existingVehicle.id != id) {

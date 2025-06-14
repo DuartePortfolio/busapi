@@ -40,8 +40,29 @@ exports.createAlternativeTrajectory = async (req, res) => {
     }
     const { stop_id_1, stop_id_2, alt_trajectory } = req.body
 
-    if (!stop_id_1 || !stop_id_2 || !alt_trajectory) {
-      return res.status(400).json({ error: 'stop_id_1, stop_id_2, and alt_trajectory are required.' })
+    // Checks for required fields
+    const missingFields = []
+    if (!stop_id_1) missingFields.push('stop_id_1')
+    if (!stop_id_2) missingFields.push('stop_id_2')
+    if (!alt_trajectory) missingFields.push('alt_trajectory')
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required field(s): ${missingFields.join(', ')}` })
+    }
+
+    // Verifies if the stops exist
+    const Stop = require('../models').Stop
+    const [stop1, stop2] = await Promise.all([
+      Stop.findByPk(stop_id_1),
+      Stop.findByPk(stop_id_2)
+    ])
+    if (!stop1) {
+      return res.status(404).json({ error: 'stop_id_1 not found.' })
+    }
+    if (!stop2) {
+      return res.status(404).json({ error: 'stop_id_2 not found.' })
+    }
+    if (stop_id_1 && stop_id_2 && stop_id_1 === stop_id_2) {
+      return res.status(400).json({ error: 'stop_id_1 and stop_id_2 cannot be the same.' })
     }
 
     const newAltTraj = await AlternativeTrajectory.create({ stop_id_1, stop_id_2, alt_trajectory })
@@ -68,6 +89,24 @@ exports.updateAlternativeTrajectory = async (req, res) => {
     const altTraj = await AlternativeTrajectory.findByPk(id)
     if (!altTraj) {
       return res.status(404).json({ error: 'Alternative trajectory not found.' })
+    }
+
+    // Verifies if the stops exist
+    const Stop = require('../models').Stop
+    if (stop_id_1) {
+      const stop1 = await Stop.findByPk(stop_id_1)
+      if (!stop1) {
+        return res.status(404).json({ error: 'stop_id_1 not found.' })
+      }
+    }
+    if (stop_id_2) {
+      const stop2 = await Stop.findByPk(stop_id_2)
+      if (!stop2) {
+        return res.status(404).json({ error: 'stop_id_2 not found.' })
+      }
+    }
+    if (stop_id_1 && stop_id_2 && stop_id_1 === stop_id_2) {
+      return res.status(400).json({ error: 'stop_id_1 and stop_id_2 cannot be the same.' })
     }
 
     await altTraj.update({ stop_id_1, stop_id_2, alt_trajectory })

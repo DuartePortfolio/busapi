@@ -42,10 +42,63 @@ exports.getTripById = async (req, res) => {
 // POST /api/trips
 exports.createTrip = async (req, res) => {
   try {
-    const { route_id, vehicle_id, driver_id, start_time } = req.body
-    if (!route_id || !vehicle_id || !driver_id || !start_time) {
-      return res.status(400).json({ error: 'route_id, vehicle_id, driver_id, and start_time are required.' })
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is required.' })
     }
+
+    // Convert to numbers cause postman sends them as strings
+    const route_id = Number(req.body.route_id)
+    const vehicle_id = Number(req.body.vehicle_id)
+    const driver_id = Number(req.body.driver_id)
+    const start_time = req.body.start_time
+
+    // Check for missing fields
+    const missingFields = []
+    if (!req.body.route_id && req.body.route_id !== 0) missingFields.push('route_id')
+    if (!req.body.vehicle_id && req.body.vehicle_id !== 0) missingFields.push('vehicle_id')
+    if (!req.body.driver_id && req.body.driver_id !== 0) missingFields.push('driver_id')
+    if (start_time === undefined || start_time === null || start_time === '') missingFields.push('start_time')
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required field(s): ${missingFields.join(', ')}` })
+    }
+
+    if (!Number.isInteger(route_id)) {
+      return res.status(400).json({ error: 'route_id must be a number.' })
+    }
+    if (!Number.isInteger(vehicle_id)) {
+      return res.status(400).json({ error: 'vehicle_id must be a number.' })
+    }
+    if (!Number.isInteger(driver_id)) {
+      return res.status(400).json({ error: 'driver_id must be a number.' })
+    }
+    if (typeof start_time !== 'string') {
+      return res.status(400).json({ error: 'start_time must be a string.' })
+    }
+    // Validate start_time as a valid date string
+    if (isNaN(Date.parse(start_time))) {
+      return res.status(400).json({ error: 'start_time must be a valid date/time string.' })
+    }
+
+    // verifies if the route, vehicle, and driver exist
+    const [route, vehicle, driver] = await Promise.all([
+      Route.findByPk(route_id),
+      Vehicle.findByPk(vehicle_id),
+      User.findByPk(driver_id)
+    ])
+    if (!route) {
+      return res.status(404).json({ error: 'Route not found.' })
+    }
+    if (!vehicle) {
+      return res.status(404).json({ error: 'Vehicle not found.' })
+    }
+    if (!driver) {
+      return res.status(404).json({ error: 'Driver not found.' })
+    }
+    // Verifica se o usuário é realmente um motorista
+    if (!driver.role || driver.role.toLowerCase() !== 'driver') {
+      return res.status(400).json({ error: 'Selected user is not a driver.' })
+    }
+
     const newTrip = await Trip.create({ route_id, vehicle_id, driver_id, start_time })
     res.status(201).json(newTrip)
   } catch (err) {

@@ -4,7 +4,15 @@ const User = db.User
 // GET /api/users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll()
+    const { name, email, role, contact } = req.query
+
+    let whereClause = {}
+    if (name) whereClause.name = name
+    if (email) whereClause.email = email
+    if (role) whereClause.role = role
+    if (contact) whereClause.contact = contact
+
+    const users = await User.findAll({ where: whereClause })
     res.json(users)
   } catch (err) {
     res.status(500).json({ error: 'Error displaying users.' })
@@ -14,8 +22,14 @@ exports.getAllUsers = async (req, res) => {
 // GET /api/users/:id
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id)
-    if (!user) return res.status(404).json({ error: 'User not found.' })
+    const id = req.params.id
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'User ID is required and must be a valid number.' })
+    }
+    const user = await User.findByPk(id)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' })
+    }
     res.json(user)
   } catch (err) {
     res.status(500).json({ error: 'Error obtaining user.' })
@@ -30,17 +44,26 @@ exports.createUser = async (req, res) => {
     }
     const { name, email, password, role, contact } = req.body
 
-    if (!name || !email || !password || !role || !contact) {
-      return res.status(400).json({ error: 'All fields are required.' })
+    // Check for missing fields
+    const missingFields = []
+    if (!name) missingFields.push('name')
+    if (!email) missingFields.push('email')
+    if (!password) missingFields.push('password')
+    if (!role) missingFields.push('role')
+    if (!contact) missingFields.push('contact')
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required field(s): ${missingFields.join(', ')}` })
     }
+
     if (!['driver', 'operator'].includes(role)) {
       return res.status(400).json({ error: 'Role must be driver or operator.' })
     }
-    //if (!contact || typeof contact !== 'integer') {
-      //return res.status(400).json({ error: 'Contact must be a number.' })
-    //}
+    // Validation to guarantee contact is a number
+    if (isNaN(Number(contact)) || !/^\d+$/.test(String(contact))) {
+      return res.status(400).json({ error: 'Contact must be a number.' })
+    }
 
-    const existingUser = await User.findOne({ where: { email}})
+    const existingUser = await User.findOne({ where: { email } })
     if (existingUser) {
       return res.status(409).json({ error: 'Email already in use.' })
     }

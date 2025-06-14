@@ -67,21 +67,32 @@ exports.createReading = async (req, res) => {
       return res.status(400).json({ error: 'Request body is required.' })
     }
 
-    const { temperature, rain, wind, location, datetime, notes } = req.body
+    // Convert to numbers if possible
+    const temperature = Number(req.body.temperature)
+    const rain = Number(req.body.rain)
+    const wind = Number(req.body.wind)
+    const location = req.body.location
+    const datetime = req.body.datetime
+    const notes = req.body.notes
 
-    if (
-      temperature === undefined || rain === undefined || wind === undefined || !location || !datetime
-    ) {
-      return res.status(400).json({ error: 'temperature, rain, wind, location, and datetime are required.' })
+    // Check for missing fields
+    const missingFields = []
+    if (req.body.temperature === undefined || req.body.temperature === null || req.body.temperature === '') missingFields.push('temperature')
+    if (req.body.rain === undefined || req.body.rain === null || req.body.rain === '') missingFields.push('rain')
+    if (req.body.wind === undefined || req.body.wind === null || req.body.wind === '') missingFields.push('wind')
+    if (!location) missingFields.push('location')
+    if (!datetime) missingFields.push('datetime')
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required field(s): ${missingFields.join(', ')}` })
     }
 
-    if (typeof temperature !== 'number') {
+    if (isNaN(temperature)) {
       return res.status(400).json({ error: 'temperature must be a number.' })
     }
-    if (typeof rain !== 'number') {
+    if (isNaN(rain)) {
       return res.status(400).json({ error: 'rain must be a number.' })
     }
-    if (typeof wind !== 'number') {
+    if (isNaN(wind)) {
       return res.status(400).json({ error: 'wind must be a number.' })
     }
     if (typeof location !== 'string') {
@@ -112,29 +123,40 @@ exports.updateReading = async (req, res) => {
   try {
     const { id } = req.params
 
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Reading ID is required and must be a valid number.' })
+    }
+
     if (!req.body) {
       return res.status(400).json({ error: 'Request body is required.' })
     }
 
-    const { temperature, rain, wind, location, datetime, notes } = req.body
+    // Convert to numbers if present
+    const temperature = req.body.temperature !== undefined ? Number(req.body.temperature) : undefined
+    const rain = req.body.rain !== undefined ? Number(req.body.rain) : undefined
+    const wind = req.body.wind !== undefined ? Number(req.body.wind) : undefined
+    const location = req.body.location
+    const datetime = req.body.datetime
+    const notes = req.body.notes
 
     const reading = await Weather.findByPk(id)
     if (!reading) {
       return res.status(404).json({ error: 'Weather reading not found.' })
     }
 
-    if (temperature !== undefined && typeof temperature !== 'number') {
+    if (temperature !== undefined && isNaN(temperature)) {
       return res.status(400).json({ error: 'temperature must be a number.' })
     }
-    if (rain !== undefined && typeof rain !== 'number') {
+    if (rain !== undefined && isNaN(rain)) {
       return res.status(400).json({ error: 'rain must be a number.' })
     }
-    if (wind !== undefined && typeof wind !== 'number') {
+    if (wind !== undefined && isNaN(wind)) {
       return res.status(400).json({ error: 'wind must be a number.' })
     }
     if (location !== undefined && typeof location !== 'string') {
       return res.status(400).json({ error: 'location must be a string.' })
     }
+
     await reading.update({ temperature, rain, wind, location, datetime, notes })
 
     res.json(reading)
@@ -146,11 +168,15 @@ exports.updateReading = async (req, res) => {
     })
   }
 }
-
 // DELETE /api/weather/:id
 exports.deleteReading = async (req, res) => {
   try {
-    const reading = await Weather.findByPk(req.params.id)
+    const id = req.params.id
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Reading ID is required and must be a valid number.' })
+    }
+
+    const reading = await Weather.findByPk(id)
     if (!reading) return res.status(404).json({ error: 'Weather reading not found.' })
 
     await reading.destroy()

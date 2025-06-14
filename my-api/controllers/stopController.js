@@ -42,15 +42,27 @@ exports.createStop = async (req, res) => {
       return res.status(400).json({ error: 'Request body is required.' })
     }
 
-    const { latitude, longitude, stop_name } = req.body
+    // Convert to numbers if possible
+    const latitude = Number(req.body.latitude)
+    const longitude = Number(req.body.longitude)
+    const stop_name = req.body.stop_name
 
-    if (latitude === undefined || typeof latitude !== 'number') {
+    // Check for missing fields
+    const missingFields = []
+    if (req.body.latitude === undefined || req.body.latitude === null || req.body.latitude === '') missingFields.push('latitude')
+    if (req.body.longitude === undefined || req.body.longitude === null || req.body.longitude === '') missingFields.push('longitude')
+    if (stop_name === undefined || stop_name === null || stop_name === '') missingFields.push('stop_name')
+    if (missingFields.length > 0) {
+      return res.status(400).json({ error: `Missing required field(s): ${missingFields.join(', ')}` })
+    }
+
+    if (isNaN(latitude)) {
       return res.status(400).json({ error: 'latitude must be a number.' })
     }
-    if (longitude === undefined || typeof longitude !== 'number') {
+    if (isNaN(longitude)) {
       return res.status(400).json({ error: 'longitude must be a number.' })
     }
-    if (!stop_name || typeof stop_name !== 'string') {
+    if (typeof stop_name !== 'string') {
       return res.status(400).json({ error: 'stop_name must be a string.' })
     }
 

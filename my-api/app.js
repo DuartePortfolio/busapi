@@ -2,11 +2,13 @@ require('dotenv').config();
 
 const express = require('express');
 const { sequelize } = require('./models');
+const cors = require('cors');
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // So postman lets you send data thats not raw json
+app.use(cors());
 
 const vehicleRoutes = require('./routes/vehicleRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');

@@ -102,7 +102,7 @@ exports.updateVehicle = async (req, res) => {
       return res.status(400).json({ error: 'capacity must be a positive number.' })
     }
 
-    // Verifies if plate_number exists on another vehicle
+    // Verifies se plate_number exists on another vehicle
     if (plate_number) {
       const existingVehicle = await Vehicle.findOne({ where: { plate_number } })
       if (existingVehicle && existingVehicle.id != id) {
@@ -127,6 +127,10 @@ exports.updateVehicle = async (req, res) => {
 // DELETE /api/vehicles/:id
 exports.deleteVehicle = async (req, res) => {
   try {
+    const id = req.params.id
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Reading ID is required and must be a valid number.' })
+    }
     const vehicle = await Vehicle.findByPk(req.params.id)
     if (!vehicle) return res.status(404).json({ error: 'Vehicle not found.' })
 
